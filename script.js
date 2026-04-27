@@ -102,11 +102,22 @@ function infer(uniqueIds, counts, beta, alpha, maxIter = 100, tol = 1e-3) {
 // ── model ─────────────────────────────────────────────────────────────────────
 let MODEL = null;
 
-async function loadModel() {
+async function loadModel(filename = "wiki_50k_100.json.gz") {
   const statusWrap = document.getElementById("model-status");
   const statusTxt  = document.getElementById("model-status-text");
+  const select     = document.getElementById("model-select");
+  const analyzeBtn = document.getElementById("analyze-btn");
+
+  // Reset UI state
+  MODEL = null;
+  select.disabled   = true;
+  analyzeBtn.disabled = true;
+  statusWrap.className = "";
+  statusTxt.textContent = "Loading model…";
+  resetResults();
+
   try {
-    const res = await fetch("wiki_50k_100.json.gz");
+    const res = await fetch(filename);
     const contentLength = res.headers.get("Content-Length");
     const total = contentLength ? parseInt(contentLength) : null;
     let loaded = 0;
@@ -138,9 +149,11 @@ async function loadModel() {
     statusWrap.className = "ready";
     statusTxt.textContent = `${MODEL.beta.length} topics · ${MODEL.vocab.length.toLocaleString()} words`;
     document.getElementById("analyze-btn").disabled = false;
+    select.disabled = false;
   } catch (e) {
     statusWrap.className = "error";
-    statusTxt.textContent = "model.json not found";
+    statusTxt.textContent = "model not found";
+    select.disabled = false;
     console.error(e);
   }
 }
@@ -426,8 +439,24 @@ document.getElementById("analyze-btn").addEventListener("click", () => {
   }, 30);
 });
 
+// ── reset results UI ──────────────────────────────────────────────────────────
+function resetResults() {
+  activeFilter = null;
+  lastWords    = [];
+  lastTopics   = [];
+  hideDetailPanel();
+  document.getElementById("topic-bars").innerHTML  = '<p class="empty">Run analysis to see topics.</p>';
+  document.getElementById("topic-list").innerHTML  = '<p class="empty">—</p>';
+  document.getElementById("output-text").innerHTML = '<p class="empty">Words will be coloured by their dominant topic.</p>';
+  document.getElementById("status").textContent    = "";
+}
+
 // ── boot ──────────────────────────────────────────────────────────────────────
 loadModel();
+
+document.getElementById("model-select").addEventListener("change", e => {
+  loadModel(e.target.value);
+});
 
 document.getElementById("input-text").value =
   "The William Randolph Hearst Foundation will give $1.25 million to Lincoln Center, Metropolitan" +
