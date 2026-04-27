@@ -102,13 +102,12 @@ function infer(uniqueIds, counts, beta, alpha, maxIter = 100, tol = 1e-3) {
 // ── model ─────────────────────────────────────────────────────────────────────
 let MODEL = null;
 
-async function loadModel(filename = "wiki_50k_100.json.gz") {
+async function loadModel(filename = "wiki_100k_100.json.gz") {
   const statusWrap = document.getElementById("model-status");
   const statusTxt  = document.getElementById("model-status-text");
   const select     = document.getElementById("model-select");
   const analyzeBtn = document.getElementById("analyze-btn");
 
-  // Reset UI state
   MODEL = null;
   select.disabled   = true;
   analyzeBtn.disabled = true;
@@ -117,21 +116,50 @@ async function loadModel(filename = "wiki_50k_100.json.gz") {
   resetResults();
 
   try {
-    const res = await fetch(filename);
-    const contentLength = res.headers.get("Content-Length");
-    const total = contentLength ? parseInt(contentLength) : null;
+    const baseFilename = filename; 
+    const responses = [];
+    const mainRes = await fetch(baseFilename);
+
+    if (mainRes.ok) {
+      responses.push(mainRes);
+    } else {
+      let partIndex = 1;
+      
+      while (true) {
+        const partRes = await fetch(`${baseFilename}.part${partIndex}`);
+        
+        if (!partRes.ok) {
+          if (partIndex === 1) throw new Error(`Model not found at ${baseFilename} or as parts.`);
+          break; 
+        }
+        
+        responses.push(partRes);
+        partIndex++;
+      }
+    }
+
+    let total = 0;
+    for (const res of responses) {
+      const contentLength = res.headers.get("Content-Length");
+      if (contentLength) total += parseInt(contentLength);
+    }
+
     let loaded = 0;
-    const reader = res.body.getReader();
     const chunks = [];
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      loaded += value.byteLength;
-      if (total) {
-        const pct = Math.round((loaded / total) * 100);
-        statusTxt.textContent = `Loading model… ${pct}%`;
+    for (const res of responses) {
+      const reader = res.body.getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        chunks.push(value);
+        loaded += value.byteLength;
+        
+        if (total) {
+          const pct = Math.round((loaded / total) * 100);
+          statusTxt.textContent = `Loading model… ${pct}%`;
+        }
       }
     }
 
@@ -139,6 +167,7 @@ async function loadModel(filename = "wiki_50k_100.json.gz") {
     const decompressed = blob.stream().pipeThrough(new DecompressionStream("gzip"));
     const text = await new Response(decompressed).text();
     const data = JSON.parse(text);
+    
     MODEL = {
       alpha:      data.alpha,
       beta:       data.beta,
@@ -146,14 +175,16 @@ async function loadModel(filename = "wiki_50k_100.json.gz") {
       wordToId:   Object.fromEntries(data.vocab.map((w, i) => [w, i])),
       topicDescs: data.topic_descs || [],
     };
+    
     statusWrap.className = "ready";
     statusTxt.textContent = `${MODEL.beta.length} topics · ${MODEL.vocab.length.toLocaleString()} words`;
     document.getElementById("analyze-btn").disabled = false;
     select.disabled = false;
+
   } catch (e) {
     statusWrap.className = "error";
     statusTxt.textContent = "model not found";
-    select.disabled = false;
+    if (typeof select !== 'undefined') select.disabled = false;
     console.error(e);
   }
 }
@@ -316,9 +347,7 @@ function renderWords(words, filter) {
   });
 }
 
-// Show per-word qscore breakdown in the detail panel
 function showWordDetail(word, spanEl) {
-  // Deselect any active chip filter
   activeFilter = null;
   document.querySelectorAll(".topic-chip").forEach(c => {
     c.classList.remove("dimmed", "selected");
@@ -331,12 +360,10 @@ function showWordDetail(word, spanEl) {
   const sub   = document.getElementById("detail-subtitle");
   const bars  = document.getElementById("detail-word-bars");
 
-  // Header
   dot.style.background = word.color ? `hsl(${word.color})` : `var(--muted)`;
   title.textContent    = `"${word.text.replace(/[^a-zA-Z']/g, "")}"`;
   sub.textContent      = "topic q-scores";
 
-  // Build sorted list of [topicId, qScore] pairs
   const scored = word.activeIds.map((tid, i) => ({ tid, q: word.qScores[i] }))
     .sort((a, b) => b.q - a.q);
 
@@ -366,7 +393,6 @@ function showWordDetail(word, spanEl) {
   panel.classList.add("visible");
 }
 
-// NEW: render the topic detail panel below the output text
 function renderDetailPanel(topic) {
   const panel = document.getElementById("topic-detail");
   const dot   = document.getElementById("detail-dot");
@@ -400,7 +426,6 @@ function renderDetailPanel(topic) {
   panel.classList.add("visible");
 }
 
-// NEW: hide the detail panel and clear its content
 function hideDetailPanel() {
   const panel = document.getElementById("topic-detail");
   panel.classList.remove("visible");
@@ -415,7 +440,6 @@ document.getElementById("analyze-btn").addEventListener("click", () => {
   const status = document.getElementById("status");
   btn.disabled = true;
   activeFilter = null;
-  // CHANGED: hide detail panel when re-running analysis
   hideDetailPanel();
   status.innerHTML = '<span class="spinner"></span>';
 
@@ -452,6 +476,7 @@ function resetResults() {
 }
 
 // ── boot ──────────────────────────────────────────────────────────────────────
+document.getElementById("model-select").value = "wiki_100k_100.json.gz";
 loadModel();
 
 document.getElementById("model-select").addEventListener("change", e => {

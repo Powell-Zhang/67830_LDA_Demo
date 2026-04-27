@@ -15,9 +15,11 @@
   <div id="model-picker">
     <label class="field-label" for="model-select">Model</label>
     <select id="model-select">
+      <option value="wiki_50k_200.json.gz">Wikipedia · 200 topics · 50k articles</option>
       <option value="wiki_50k_100.json.gz">Wikipedia · 100 topics · 50k articles</option>
       <option value="wiki_50k_50.json.gz">Wikipedia · 50 topics · 50k articles</option>
       <option value="wiki_50k_10.json.gz">Wikipedia · 10 topics · 50k articles</option>
+      <option value="wiki_100k_100.json.gz" selected>Wikipedia · 100 topics · 100k articles</option>
       <option value="wiki_100k_50.json.gz">Wikipedia · 50 topics · 100k articles</option>
       <option value="wiki_100k_10.json.gz">Wikipedia · 10 topics · 100k articles</option>
     </select>
@@ -51,7 +53,6 @@
       <div>
         <div class="section-title">Highlighted output</div>
         <div id="output-text"><p class="empty">Words will be coloured by their dominant topic.</p></div>
-        <!-- NEW: detail panel, hidden until a chip is clicked -->
         <div id="topic-detail">
           <div class="detail-header">
             <div class="detail-dot" id="detail-dot"></div>
