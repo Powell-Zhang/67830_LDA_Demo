@@ -53,10 +53,10 @@ header span { color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text
   background-repeat: no-repeat;
   background-position: right 9px center;
   transition: border-color 0.2s, opacity 0.2s;
-  max-width: 260px;
+  max-width: 400px;
 }
-#model-select:hover  { border-color: rgba(200,181,96,0.3); }
-#model-select:focus  { border-color: rgba(200,181,96,0.5); }
+#model-select:hover  { border-color: rgba(200, 181, 96, 0.9); }
+#model-select:focus  { border-color: rgba(200, 181, 96, 0.9); }
 #model-select:disabled { opacity: 0.4; cursor: not-allowed; }
 #model-status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background 0.3s; }
 #model-status.ready .dot { background: #5cb87a; }
