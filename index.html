@@ -13,16 +13,50 @@
 <header>
   <h1>LDA Visualizer</h1>
   <div id="model-picker">
-    <label class="field-label" for="model-select">Model</label>
-    <select id="model-select">
-      <option value="wiki_50k_200.json.gz">Wikipedia · 200 topics · 50k articles</option>
-      <option value="wiki_50k_100.json.gz">Wikipedia · 100 topics · 50k articles</option>
-      <option value="wiki_50k_50.json.gz">Wikipedia · 50 topics · 50k articles</option>
-      <option value="wiki_50k_10.json.gz">Wikipedia · 10 topics · 50k articles</option>
-      <option value="wiki_100k_100.json.gz" selected>Wikipedia · 100 topics · 100k articles</option>
-      <option value="wiki_100k_50.json.gz">Wikipedia · 50 topics · 100k articles</option>
-      <option value="wiki_100k_10.json.gz">Wikipedia · 10 topics · 100k articles</option>
-    </select>
+  <label class="field-label">Model</label>
+    <button id="model-trigger-btn">
+      <span id="model-trigger-text">Wikipedia · 100 topics · 100k articles</span>
+      <span class="model-chevron">▼</span>
+    </button>
+  </div>
+
+  <div id="model-backdrop">
+    <div class="mp-modal">
+      <div class="mp-modal-title">Select model</div>
+      <div class="mp-step-label">Corpus</div>
+      <div class="mp-options">
+        <button class="mp-option selected" data-corpus="wiki_100k">
+          <span>Wiki 100k</span><span class="mp-opt-sub">Wikipedia · 100k articles</span>
+        </button>
+        <button class="mp-option" data-corpus="wiki_50k">
+          <span>Wiki 50k</span><span class="mp-opt-sub">Wikipedia · 50k articles</span>
+        </button>
+        <button class="mp-option" data-corpus="nyt1995_100k">
+          <span>NYT 1995</span><span class="mp-opt-sub">New York Times · 100k articles</span>
+        </button>
+        <button class="mp-option" data-corpus="nyt2000_100k">
+          <span>NYT 2000</span><span class="mp-opt-sub">New York Times · 100k articles</span>
+        </button>
+        <button class="mp-option" data-corpus="nyt2005_100k">
+          <span>NYT 2005</span><span class="mp-opt-sub">New York Times · 100k articles</span>
+        </button>
+        <button class="mp-option" data-corpus="nyt2010_100k">
+          <span>NYT 2010</span><span class="mp-opt-sub">New York Times · 100k articles</span>
+        </button>
+      </div>
+      <div class="mp-divider"></div>
+      <div class="mp-step-label">Number of topics</div>
+      <div class="mp-topic-grid">
+        <button class="mp-topic-btn" data-topics="10">10</button>
+        <button class="mp-topic-btn" data-topics="50">50</button>
+        <button class="mp-topic-btn selected" data-topics="100">100</button>
+        <button class="mp-topic-btn" data-topics="200" id="topics-200">200</button>
+      </div>
+      <div class="mp-footer">
+        <button id="mp-cancel">Cancel</button>
+        <button id="mp-confirm">Load model</button>
+      </div>
+    </div>
   </div>
   <div id="model-status">
     <div class="dot"></div>

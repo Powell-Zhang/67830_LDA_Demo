@@ -105,11 +105,11 @@ let MODEL = null;
 async function loadModel(filename = "wiki_100k_100.json.gz") {
   const statusWrap = document.getElementById("model-status");
   const statusTxt  = document.getElementById("model-status-text");
-  const select     = document.getElementById("model-select");
+  const select = document.getElementById("model-trigger-btn");
   const analyzeBtn = document.getElementById("analyze-btn");
 
   MODEL = null;
-  select.disabled   = true;
+  select.disabled = true;
   analyzeBtn.disabled = true;
   statusWrap.className = "";
   statusTxt.textContent = "Loading model…";
@@ -476,12 +476,67 @@ function resetResults() {
 }
 
 // ── boot ──────────────────────────────────────────────────────────────────────
-document.getElementById("model-select").value = "wiki_100k_100.json.gz";
-loadModel();
 
-document.getElementById("model-select").addEventListener("change", e => {
-  loadModel(e.target.value);
+const backdrop    = document.getElementById('model-backdrop');
+const triggerBtn  = document.getElementById('model-trigger-btn');
+const triggerText = document.getElementById('model-trigger-text');
+const confirmBtn  = document.getElementById('mp-confirm');
+const cancelBtn   = document.getElementById('mp-cancel');
+const topics200   = document.getElementById('topics-200');
+
+
+let selCorpus = 'wiki_100k', selTopics = '100';
+topics200.disabled=true;
+
+function modelValue() {
+  const topicMap = { '10':'10', '50':'50', '100':'100', '200':'200' };
+  return `${selCorpus}_${topicMap[selTopics]}.json.gz`;
+}
+
+function updateConfirm() {
+  confirmBtn.classList.toggle('active', !!(selCorpus && selTopics));
+}
+
+document.querySelectorAll('.mp-option').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mp-option').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selCorpus = btn.dataset.corpus;
+    topics200.disabled = (selCorpus !== 'wiki_50k');
+    if (selCorpus !== 'wiki_50k' && selTopics === '200') {
+      selTopics = null;
+      document.querySelectorAll('.mp-topic-btn').forEach(b => b.classList.remove('selected'));
+    }
+    updateConfirm();
+  });
 });
+
+document.querySelectorAll('.mp-topic-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.disabled) return;
+    document.querySelectorAll('.mp-topic-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selTopics = btn.dataset.topics;
+    updateConfirm();
+  });
+});
+
+triggerBtn.addEventListener('click', () => backdrop.classList.add('open'));
+cancelBtn.addEventListener('click',  () => backdrop.classList.remove('open'));
+backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.classList.remove('open'); });
+
+confirmBtn.addEventListener('click', () => {
+  if (!selCorpus || !selTopics) return;
+  const corpus = selCorpus.startsWith('wiki') ? 'Wikipedia'
+  : selCorpus.startsWith('nyt') ? `NYT ${selCorpus.slice(3, 7)}` : '';
+  const label = `${corpus} · ${selTopics} topics · ${selCorpus.match(/(\d+k)$/)[1]} articles`;
+  triggerText.textContent = label;
+  backdrop.classList.remove('open');
+  loadModel(modelValue()); 
+});
+
+updateConfirm();
+
 
 document.getElementById("input-text").value =
   "The William Randolph Hearst Foundation will give $1.25 million to Lincoln Center, Metropolitan" +

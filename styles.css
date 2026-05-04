@@ -34,27 +34,82 @@ color: var(--accent);
 letter-spacing: -0.5px;
 }
 header span { color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+#model-picker {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 #model-status { margin-left: auto; font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
-#model-picker { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-#model-picker .field-label { white-space: nowrap; }
-#model-select {
+#model-trigger-btn {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
   font-family: var(--mono);
   font-size: 11px;
-  padding: 5px 28px 5px 10px;
-  outline: none;
+  padding: 5px 12px;
   cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b6966' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 9px center;
-  transition: border-color 0.2s, opacity 0.2s;
-  max-width: 400px;
+  display: flex; align-items: center; gap: 8px;
+  transition: border-color 0.2s;
 }
+#model-trigger-btn:hover { border-color: rgba(200,181,96,0.9); }
+.model-chevron { color: var(--muted); font-size: 9px; }
+
+#model-backdrop {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  align-items: center; justify-content: center;
+  z-index: 1000;
+}
+#model-backdrop.open { display: flex; }
+.mp-modal {
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  padding: 28px 28px 24px;
+  width: 380px;
+}
+.mp-modal-title { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text); margin-bottom: 18px; }
+.mp-step-label  { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.mp-options     { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.mp-option {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px;
+  cursor: pointer; font-family: var(--mono); font-size: 12px; color: var(--text);
+  text-align: left; display: flex; align-items: center; justify-content: space-between;
+  transition: border-color 0.15s, background 0.15s;
+}
+.mp-option span:first-child{ color: var(--text); }
+.mp-option:hover   { border-color: rgba(200,181,96,0.5); }
+.mp-option.selected { border-color: var(--accent); background: rgba(200,181,96,0.08); }
+.mp-opt-sub { font-size: 10px; color: var(--muted); }
+.mp-divider { height: 1px; background: var(--border); margin: 0 0 18px; }
+.mp-topic-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
+.mp-topic-btn {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 0;
+  cursor: pointer; font-family: var(--mono); font-size: 13px; color: var(--text);
+  text-align: center; transition: border-color 0.15s, background 0.15s;
+}
+.mp-topic-btn:hover    { border-color: rgba(200,181,96,0.5); }
+.mp-topic-btn.selected { border-color: var(--accent); background: rgba(200,181,96,0.08); color: var(--accent); }
+.mp-topic-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.mp-footer { display: flex; justify-content: space-between; }
+#mp-cancel {
+  background: none; border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 16px; font-family: var(--mono); font-size: 11px; color: var(--muted); cursor: pointer;
+}
+#mp-cancel:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+#mp-confirm {
+  background: var(--accent); border: none; border-radius: 8px;
+  padding: 8px 20px; font-family: var(--mono); font-size: 11px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.06em; color: #0e0e10; cursor: pointer;
+  opacity: 0.4; transition: opacity 0.15s;
+}
+#mp-confirm.active { opacity: 1; }
 #model-select:hover  { border-color: rgba(200, 181, 96, 0.9); }
 #model-select:focus  { border-color: rgba(200, 181, 96, 0.9); }
 #model-select:disabled { opacity: 0.4; cursor: not-allowed; }
