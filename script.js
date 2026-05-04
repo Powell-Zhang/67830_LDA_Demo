@@ -539,7 +539,7 @@ updateConfirm();
 
 
 document.getElementById("input-text").value =
-  "The William Randolph Hearst Foundation will give $1.25 million to Lincoln Center, Metropolitan" +
+  "The William Randolph Hearst Foundation will give $1.25 million to Lincoln Center, Metropolitan " +
   "Opera Co., New York Philharmonic and Juilliard School. \"Our board felt that we had a " +
   "real opportunity to make a mark on the future of the performing arts with these grants an act " +
   "every bit as important as our traditional areas of support in health, medical research, education " +
