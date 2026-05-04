@@ -536,6 +536,7 @@ confirmBtn.addEventListener('click', () => {
 });
 
 updateConfirm();
+loadModel();
 
 
 document.getElementById("input-text").value =
