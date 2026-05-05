@@ -2,6 +2,19 @@ import numpy as np
 from scipy.special import digamma, polygamma
 from datasets import load_dataset 
 from tqdm import tqdm
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from collections import Counter
+import torch
+from itertools import groupby
+from datasets import load_from_disk
+import string
+from tqdm.contrib.concurrent import process_map
+
+STOPWORDS = set(stopwords.words("english"))
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
 def load_wikipedia(num_articles=1000, min_len=200):
     ds = load_dataset("wikimedia/wikipedia", "20231101.en", streaming=True)
     data = []
@@ -14,14 +27,6 @@ def load_wikipedia(num_articles=1000, min_len=200):
             break
     pbar.close()
     return data
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-from collections import Counter
-
-import string
-from tqdm.contrib.concurrent import process_map
-
-STOPWORDS = set(stopwords.words("english"))
 
 
 def preprocess_data(data):
@@ -47,12 +52,12 @@ def preprocess_text(text):
 def build_vocab(tokenized_data, min_df = 5, max_df = 0.85):
     doc_freq = Counter()
     for doc in tqdm(tokenized_data, "Building Vocab"):
-        doc_freq.update(set(doc))   # set() so each word counts once per doc
+        doc_freq.update(set(doc))   
 
     n_docs = len(tokenized_data)
     vocab = {
         word for word, df in doc_freq.items()
-        if min_df <= df <= max_df * n_docs      # drop too-rare and too-common
+        if min_df <= df <= max_df * n_docs     
     }
     return vocab, doc_freq
 
@@ -63,13 +68,7 @@ def get_ids(tokenized_data, vocab):
         doc_ids = [word_to_id[token] for token in article if token in word_to_id]
         corpus_word_ids.append(doc_ids)
     return corpus_word_ids, word_to_id
-import torch
-import torch.nn.functional as F
-from scipy.special import digamma
-from itertools import groupby
 
-# Check GPU available
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def _digamma_torch(x):
     """torch.special.digamma works on tensors directly"""
@@ -83,38 +82,30 @@ def _estep_batch_gpu(unique_ids_batch, counts_batch, log_beta_T, alpha, max_iter
     log_beta_T:       (v, k) float32 tensor on GPU
     alpha:            (k,) tensor
     """
-    batch_size, n_unique = unique_ids_batch.shape
-    k = log_beta_T.shape[1]
 
-    # Gather log_beta cols for this batch — (batch_size, n_unique, k)
     log_phi = log_beta_T[unique_ids_batch]
 
-    # Warm-start
     log_phi -= log_phi.max(dim=2, keepdim=True).values
-    phi = torch.softmax(log_phi, dim=2)                          # (batch_size, n_unique, k)
+    phi = torch.softmax(log_phi, dim=2)                          
 
-    # gamma init — (batch_size, k)
     gamma = alpha.unsqueeze(0) + (phi * counts_batch.unsqueeze(2)).sum(dim=1)
 
     for _ in range(max_iter):
         gamma_old = gamma.clone()
 
-        # E[log theta] — (batch_size, k)
         log_exp_theta = (_digamma_torch(gamma)
                          - _digamma_torch(gamma.sum(dim=1, keepdim=True)))
 
-        # phi update — (batch_size, n_unique, k)
         log_phi = log_beta_T[unique_ids_batch] + log_exp_theta.unsqueeze(1)
         log_phi -= log_phi.max(dim=2, keepdim=True).values
         phi = torch.softmax(log_phi, dim=2)
 
-        # gamma update
         gamma = alpha.unsqueeze(0) + (phi * counts_batch.unsqueeze(2)).sum(dim=1)
 
         if (gamma - gamma_old).abs().mean() < tol:
             break
 
-    return gamma, phi   # (batch_size, k), (batch_size, n_unique, k)
+    return gamma, phi   
 
 
 def _bucket_corpus(corpus_sparse, bucket_size=8):
@@ -129,12 +120,11 @@ def _bucket_corpus(corpus_sparse, bucket_size=8):
 
 class VariationalLDA2:
     def __init__(self, num_topics, vocab_size, alpha_init=1.0, eta=0.01):
-        self.k = num_topics  # Number of topics [4]
-        self.v = vocab_size  # Vocabulary size [5]
-        # Corpus-level parameters [6]
-        self.alpha = np.full(self.k, alpha_init)  # Dirichlet prior [4, 7]
-        self.beta = np.random.dirichlet([1.0] * self.v, self.k) # Topic-word matrix [4]
-        self.eta = eta # Smoothing parameter for beta [8, 9]
+        self.k = num_topics  
+        self.v = vocab_size  
+        self.alpha = np.full(self.k, alpha_init)  # Dirichlet prior 
+        self.beta = np.random.dirichlet([1.0] * self.v, self.k) # Topic-word matrix 
+        self.eta = eta # Smoothing parameter for beta 
 
     def _estep_batch(self, bow, log_beta_T, gammas, alpha, beta_numerator, max_iter=100, tol=1e-3):
         """
@@ -146,12 +136,11 @@ class VariationalLDA2:
         ss_alpha = np.zeros(alpha.shape[0])
 
         for d in tqdm(range(n_docs), desc="E-step"):
-            # sparse row slice — only non-zero vocab entries
             row = bow.getrow(d)
             unique_ids = row.indices
             counts = row.data
 
-            log_phi = log_beta_T[unique_ids]                               # (n_unique, k)
+            log_phi = log_beta_T[unique_ids]                              
             log_exp_theta = digamma(gammas[d]) - digamma(gammas[d].sum())
             log_phi = log_phi + log_exp_theta
             log_phi -= log_phi.max(axis=1, keepdims=True)
@@ -183,14 +172,11 @@ class VariationalLDA2:
         )
         n_docs = len(corpus_sparse)
 
-        # Move beta to GPU once
         log_beta_T = torch.tensor(
             np.ascontiguousarray(np.log(self.beta + 1e-12).T),
             dtype=torch.float32, device=device
         )
         alpha_gpu = torch.tensor(self.alpha, dtype=torch.float32, device=device)
-
-        # Cache gammas on GPU
         gammas_np = np.tile(self.alpha, (n_docs, 1)).astype(np.float32)
 
         buckets = _bucket_corpus(corpus_sparse, bucket_size=8)
@@ -220,7 +206,6 @@ class VariationalLDA2:
                         pad_ids[j, :len(uid)]    = uid
                         pad_counts[j, :len(cnt)] = cnt
 
-                    # Send to GPU
                     ids_gpu    = torch.tensor(pad_ids,    device=device)
                     counts_gpu = torch.tensor(pad_counts, device=device)
 
@@ -229,18 +214,17 @@ class VariationalLDA2:
                             ids_gpu, counts_gpu, log_beta_T, alpha_gpu
                         )
 
-                    # Accumulate beta_numerator — bring phi back to CPU
-                    phi_cpu    = phi_d.cpu().numpy()           # (B, max_len, k)
-                    counts_cpu = pad_counts                    # (B, max_len)
+                    # Accumulate 
+                    phi_cpu    = phi_d.cpu().numpy()           
+                    counts_cpu = pad_counts                  
                     gamma_cpu  = gamma_d.cpu().numpy()
 
                     for j, (uid, _) in enumerate(docs):
                         n = len(uid)
-                        weighted = (phi_cpu[j, :n] * counts_cpu[j, :n, None]).T  # (k, n)
+                        weighted = (phi_cpu[j, :n] * counts_cpu[j, :n, None]).T  
                         beta_numerator[:, uid] += weighted
                         ss_alpha += digamma(gamma_cpu[j]) - digamma(gamma_cpu[j].sum())
 
-                    # Cache updated gammas
                     gammas_np[doc_indices] = gamma_cpu
 
             self.beta = beta_numerator / beta_numerator.sum(axis=1, keepdims=True)
@@ -257,13 +241,10 @@ class VariationalLDA2:
         """
         for _ in range(max_iter):
             sum_alpha = np.sum(self.alpha)
-            # Gradient [20]
             g = M * (digamma(sum_alpha) - digamma(self.alpha)) + ss_alpha
-            # Hessian components [20, 21]
             h = -M * polygamma(1, self.alpha)
             z = M * polygamma(1, sum_alpha)
             
-            # Linear-time matrix inversion [12, 21]
             c = np.sum(g / h) / (1.0/z + np.sum(1.0/h))
             step = (g - c) / h
 
@@ -279,11 +260,8 @@ def print_top_topics(model, vocab, n_words=10):
     topic_dicts = []
     for topic_idx in range(model.k):
         top_ids = np.argsort(model.beta[topic_idx])[::-1][:n_words]
-        top_words = [(vocab[i], model.beta[topic_idx][i]) for i in top_ids]
         top_dict = {vocab[i]:model.beta[topic_idx][i] for i in top_ids}
         topic_dicts.append(top_dict)
-        words_str = "  ".join(f"{w} ({p:.3f})" for w, p in top_words)
-        # print(f"Topic {topic_idx:2d}: {words_str}")
     return topic_dicts
 import json 
 def export_model(lda_model, word_to_id, topic_dicts, path="model.json"):
@@ -293,14 +271,14 @@ def export_model(lda_model, word_to_id, topic_dicts, path="model.json"):
 
     payload = {
         "alpha": lda_model.alpha.tolist(),
-        "beta":  lda_model.beta.tolist(),   # (k, v)
+        "beta":  lda_model.beta.tolist(),   
         "vocab": vocab_list,
         "topic_descs": topic_dicts 
     }
     with open(path, "w") as f:
         json.dump(payload, f, separators=(",", ":"))   # compact
     print(f"Exported — vocab {len(vocab_list)}, topics {lda_model.k}")
-from datasets import load_from_disk
+
 for year in [1995, 2000, 2005, 2010]:
     data = load_from_disk("/home/wsl_default/MIT/6.783/gigaword/gigaword_eng_5/data/nyt_eng/_nyt_1995")
     data = data.filter(lambda x: len(x["text"].split()) > 100)
