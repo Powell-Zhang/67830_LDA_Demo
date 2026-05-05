@@ -96,7 +96,7 @@ function infer(uniqueIds, counts, beta, alpha, maxIter = 100, tol = 1e-3) {
     if (delta / k < tol) break;
   }
 
-  return gamma;
+  return {gamma, phi, uniqueIds};
 }
 
 // ── model ─────────────────────────────────────────────────────────────────────
@@ -200,7 +200,11 @@ function runAnalysis(text) {
   const uniqueIds = Object.keys(countMap).map(Number);
   const counts    = uniqueIds.map(id => countMap[id]);
 
-  const gamma    = infer(uniqueIds, counts, MODEL.beta, MODEL.alpha);
+  const { gamma, phi, uniqueIds: inferredIds } = infer(uniqueIds, counts, MODEL.beta, MODEL.alpha);
+  const phiByWid = {};
+  for (let n = 0; n < inferredIds.length; n++) {
+    phiByWid[inferredIds[n]] = phi[n];
+  }
   const gammaSum = gamma.reduce((a, b) => a + b, 0);
   const theta    = Array.from(gamma, g => g / gammaSum);
   const evidence = Array.from(gamma, (g, j) => g - MODEL.alpha[j]);
@@ -233,30 +237,38 @@ function runAnalysis(text) {
   if (!topics.length) return null;
   const activeIds = topics.map(t => t.id);
 
-  const dgFn = x => Math.log(Math.max(x - 0.5, 1e-10));
-  const logGammaByTopic = Object.fromEntries(
-    activeIds.map(tid => [tid, dgFn(gamma[tid])])
-  );
-
   const words = text.split(/\s+/).map(token => {
     const wid = MODEL.wordToId[token.toLowerCase().replace(/[^a-z\s']/g, "")];
-    if (wid === undefined) return { text: token, topic: null, color: null };
+    if (wid === undefined || !phiByWid[wid]) return { text: token, topic: null, color: null };
 
-    const logScores = activeIds.map(tid =>
-      logGammaByTopic[tid] + Math.log(MODEL.beta[tid][wid] || 1e-10)
-    );
-    const maxLog    = Math.max(...logScores);
-    const expScores = logScores.map(s => Math.exp(s - maxLog));
-    const expSum    = expScores.reduce((a, b) => a + b, 0);
-    const qScores   = expScores.map(s => s / expSum);
-
+    const phiRow = phiByWid[wid]; 
+    const scores = activeIds.map(tid => phiRow[tid]);
+    const total_score = scores.reduce((a,c) => a+c, 0)
+    const qScores   = scores.map(score => score / total_score);
     const bestIdx   = qScores.indexOf(Math.max(...qScores));
     const bestQ     = qScores[bestIdx];
     const bestTopic = activeIds[bestIdx];
 
-    if (bestQ <= 0.7) return { text: token, topic: null, color: null, qScores, activeIds };
-    return { text: token, topic: bestTopic, color: COLORS[bestIdx % COLORS.length], qScores, activeIds };
+    if (bestQ <= 0.7) return { text: token, topic: null, color: null, qScores, activeIds};
+    return { text: token, topic: bestTopic, color: COLORS[bestIdx % COLORS.length], qScores, activeIds};
   });
+
+  // const words = text.split(/\s+/).map(token => {
+  //   const wid = MODEL.wordToId[token.toLowerCase().replace(/[^a-z\s']/g, "")];
+  //   if (wid === undefined) return { text: token, topic: null, color: null };
+  //   const logScores = activeIds.map(tid =>
+  //     logGammaByTopic[tid] + Math.log(MODEL.beta[tid][wid] || 1e-10)
+  //   );
+  //   const maxLog    = Math.max(...logScores);
+  //   const expScores = logScores.map(s => Math.exp(s - maxLog));
+  //   const expSum    = expScores.reduce((a, b) => a + b, 0);
+  //   const qScores   = expScores.map(s => s / expSum);
+  //   const bestIdx   = qScores.indexOf(Math.max(...qScores));
+  //   const bestQ     = qScores[bestIdx];
+  //   const bestTopic = activeIds[bestIdx];
+  //   if (bestQ <= 0.7) return { text: token, topic: null, color: null, qScores, activeIds };
+  //   return { text: token, topic: bestTopic, color: COLORS[bestIdx % COLORS.length], qScores, activeIds };
+  // });
 
   return { topics, words };
 }
