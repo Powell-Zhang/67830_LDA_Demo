@@ -238,7 +238,7 @@ function runAnalysis(text) {
   if (!topics.length) return null;
   const activeIds = topics.map(t => t.id);
 
-  const words = text.match(/\$?[0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?|[a-z]+(?:'[a-z]+)?|[^\w\s]/gi).map(token => {
+  const words = text.match(/\$?[0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?|[a-z]+(?:'[a-z]+)*|\s+|[^\w\s]/gi).map(token => {
     const wid = MODEL.wordToId[token.toLowerCase()];
     if (wid === undefined || !phiByWid[wid]) return { text: token, topic: null, color: null };
 
@@ -338,12 +338,6 @@ function renderWords(words, filter) {
       span.title   = sorted.slice(0, 3).map(([wd]) => wd).join(" · ") || `Topic ${w.topic}`;
       span.style.cursor = "pointer";
       span.addEventListener("click", () => showWordDetail(w, span));
-    }
-    if (/^(\$?[0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?|[a-z]+(?:'[a-z]+)*)$/i.test(w.text)) {
-      const spaceSpan = document.createElement("span");
-      spaceSpan.textContent = " ";
-      spaceSpan.className = "word oop";
-      el.appendChild(spaceSpan);
     }
 
     el.appendChild(span);
@@ -483,6 +477,7 @@ function resetResults() {
 
 const backdrop    = document.getElementById('model-backdrop');
 const triggerBtn  = document.getElementById('model-trigger-btn');
+const analyzeBtn  = document.getElementById("analyze-btn");
 const triggerText = document.getElementById('model-trigger-text');
 const confirmBtn  = document.getElementById('mp-confirm');
 const cancelBtn   = document.getElementById('mp-cancel');
@@ -494,6 +489,7 @@ const yearBtns = document.querySelectorAll('.mp-year-btn');
 let selCorpus = 'wiki', selTopics = '100', selArticles = '100k', selYear='';
 topics200.disabled=true;
 yearRow.classList.toggle('visible', false);
+
 
 function modelValue() {
   if (selCorpus === 'nyt') return `model_weights/${selCorpus}${selYear}_${selArticles}_${selTopics}.json.gz`;
@@ -568,6 +564,7 @@ confirmBtn.addEventListener('click', () => {
 
 updateConfirm();
 backdrop.classList.add('open');
+analyzeBtn.disabled=true;
 
 document.getElementById("input-text").value =
   "The William Randolph Hearst Foundation will give $1.25 million to Lincoln Center, Metropolitan " +
