@@ -28,7 +28,7 @@ const STOPWORDS = new Set([
   "other","some","such","no","nor","not","only","own","same","so","than",
   "too","very","s","t","can","will","just","don","should","now","d","ll",
   "m","o","re","ve","y","ain","aren","couldn","didn","doesn","hadn","hasn",
-  "haven","isn","ma","mightn","mustn","needn","shan","shouldn","wasn","weren",
+  "isn","ma","mightn","mustn","needn","shan","shouldn","wasn","weren",
   "won","wouldn","also","one","two","three","four","five","first","second",
   "third","last","next","new","old","many","much","well","often","would",
   "could","may","might","must","shall","said","known","used","made","became",
@@ -252,24 +252,6 @@ function runAnalysis(text) {
     if (bestQ <= 0.7) return { text: token, topic: null, color: null, qScores, activeIds};
     return { text: token, topic: bestTopic, color: COLORS[bestIdx % COLORS.length], qScores, activeIds};
   });
-
-  // const words = text.split(/\s+/).map(token => {
-  //   const wid = MODEL.wordToId[token.toLowerCase().replace(/[^a-z\s']/g, "")];
-  //   if (wid === undefined) return { text: token, topic: null, color: null };
-  //   const logScores = activeIds.map(tid =>
-  //     logGammaByTopic[tid] + Math.log(MODEL.beta[tid][wid] || 1e-10)
-  //   );
-  //   const maxLog    = Math.max(...logScores);
-  //   const expScores = logScores.map(s => Math.exp(s - maxLog));
-  //   const expSum    = expScores.reduce((a, b) => a + b, 0);
-  //   const qScores   = expScores.map(s => s / expSum);
-  //   const bestIdx   = qScores.indexOf(Math.max(...qScores));
-  //   const bestQ     = qScores[bestIdx];
-  //   const bestTopic = activeIds[bestIdx];
-  //   if (bestQ <= 0.7) return { text: token, topic: null, color: null, qScores, activeIds };
-  //   return { text: token, topic: bestTopic, color: COLORS[bestIdx % COLORS.length], qScores, activeIds };
-  // });
-
   return { topics, words };
 }
 
@@ -497,28 +479,29 @@ const cancelBtn   = document.getElementById('mp-cancel');
 const topics200   = document.getElementById('topics-200');
 
 
-let selCorpus = 'wiki_100k', selTopics = '100';
+let selCorpus = 'wiki', selTopics = '100', selArticles = '100k';
 topics200.disabled=true;
 
 function modelValue() {
-  const topicMap = { '10':'10', '50':'50', '100':'100', '200':'200' };
-  return `${selCorpus}_${topicMap[selTopics]}.json.gz`;
+  return `model_weights/${selCorpus}_${selArticles}_${selTopics}.json.gz`;
 }
 
 function updateConfirm() {
-  confirmBtn.classList.toggle('active', !!(selCorpus && selTopics));
+  confirmBtn.classList.toggle('active', !!(selCorpus && selTopics && selArticles));
 }
-
+function update200() {
+  topics200.disabled = (selCorpus !== 'wiki' || selArticles === '100k');
+  if (topics200.disabled && selTopics === '200') {
+    selTopics = null;
+    document.querySelectorAll('.mp-topic-btn').forEach(b => b.classList.remove('selected'));
+  }
+}
 document.querySelectorAll('.mp-option').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.mp-option').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
     selCorpus = btn.dataset.corpus;
-    topics200.disabled = (selCorpus !== 'wiki_50k');
-    if (selCorpus !== 'wiki_50k' && selTopics === '200') {
-      selTopics = null;
-      document.querySelectorAll('.mp-topic-btn').forEach(b => b.classList.remove('selected'));
-    }
+    update200();
     updateConfirm();
   });
 });
@@ -533,6 +516,16 @@ document.querySelectorAll('.mp-topic-btn').forEach(btn => {
   });
 });
 
+document.querySelectorAll('.mp-article-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mp-article-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selArticles = btn.dataset.articles;
+    update200();
+    updateConfirm();
+  });
+});
+
 triggerBtn.addEventListener('click', () => backdrop.classList.add('open'));
 cancelBtn.addEventListener('click',  () => backdrop.classList.remove('open'));
 backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.classList.remove('open'); });
@@ -541,15 +534,15 @@ confirmBtn.addEventListener('click', () => {
   if (!selCorpus || !selTopics) return;
   const corpus = selCorpus.startsWith('wiki') ? 'Wikipedia'
   : selCorpus.startsWith('nyt') ? `NYT ${selCorpus.slice(3, 7)}` : '';
-  const label = `${corpus} · ${selTopics} topics · ${selCorpus.match(/(\d+k)$/)[1]} articles`;
+  const label = `${corpus} · ${selTopics} topics · ${selArticles} articles`;
   triggerText.textContent = label;
   backdrop.classList.remove('open');
+  console.log("loading", modelValue());
   loadModel(modelValue()); 
 });
 
 updateConfirm();
-loadModel();
-
+backdrop.classList.add('open');
 
 document.getElementById("input-text").value =
   "The William Randolph Hearst Foundation will give $1.25 million to Lincoln Center, Metropolitan " +
