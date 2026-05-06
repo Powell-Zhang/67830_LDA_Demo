@@ -12,6 +12,28 @@ import string
 from tqdm.contrib.concurrent import process_map
 
 STOPWORDS = set(stopwords.words("english"))
+STOPWORDS.update(
+    ["i","me","my","myself","we","our","ours","ourselves","you","your","yours",
+  "yourself","yourselves","he","him","his","himself","she","her","hers",
+  "herself","it","its","itself","they","them","their","theirs","themselves",
+  "what","which","who","whom","this","that","these","those","am","is","are",
+  "was","were","be","been","being","have","has","had","having","do","does",
+  "did","doing","a","an","the","and","but","if","or","because","as","until",
+  "while","of","at","by","for","with","about","against","between","into",
+  "through","during","before","after","above","below","to","from","up","down",
+  "in","out","on","off","over","under","again","further","then","once","here",
+  "there","when","where","why","how","all","both","each","few","more","most",
+  "other","some","such","no","nor","not","only","own","same","so","than",
+  "too","very","s","t","can","will","just","don","should","now","d","ll",
+  "m","o","re","ve","y","ain","aren","couldn","didn","doesn","hadn","hasn",
+  "isn","ma","mightn","mustn","needn","shan","shouldn","wasn","weren",
+  "won","wouldn","also","one","two","three","four","five","first","second",
+  "third","last","next","new","old","many","much","well","often","would",
+  "could","may","might","must","shall","said","known","used","made","became",
+  "include","including","however","although","since","later","early","large",
+  "small","different","another","several","various","number","part","set",
+  "use","uses","using","de","b","see","references","held"]
+)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -258,9 +280,10 @@ def print_top_topics(model, vocab, n_words=10):
     vocab: list or array of strings where vocab[i] is the word for id i
     """
     topic_dicts = []
+    beta_normalized = model.beta / model.beta.sum(axis=1, keepdims=True)
     for topic_idx in range(model.k):
-        top_ids = np.argsort(model.beta[topic_idx])[::-1][:n_words]
-        top_dict = {vocab[i]:model.beta[topic_idx][i] for i in top_ids}
+        top_ids = np.argsort(beta_normalized[topic_idx])[::-1][:n_words]
+        top_dict = {vocab[i]:beta_normalized[topic_idx][i] for i in top_ids}
         topic_dicts.append(top_dict)
     return topic_dicts
 import json 
@@ -279,18 +302,61 @@ def export_model(lda_model, word_to_id, topic_dicts, path="model.json"):
         json.dump(payload, f, separators=(",", ":"))   # compact
     print(f"Exported — vocab {len(vocab_list)}, topics {lda_model.k}")
 
-for year in [1995, 2000, 2005, 2010]:
-    data = load_from_disk("/home/wsl_default/MIT/6.783/gigaword/gigaword_eng_5/data/nyt_eng/_nyt_1995")
-    data = data.filter(lambda x: len(x["text"].split()) > 100)
-    data = data.shuffle(seed=42).select(range(100_000))["text"]
-    tokenized_data = preprocess_data(data)
-    vocab, doc_freq = build_vocab(tokenized_data)
-    corpus_word_ids, word_to_id = get_ids(tokenized_data, vocab)
+ITERS = 30
+for year in [2000, 2005, 2010]:
+    dataset = load_from_disk(f"/home/wsl_default/MIT/6.783/gigaword/gigaword_eng_5/data/nyt_eng/_nyt_{year}")
+    dataset = dataset.filter(lambda x: len(x["text"].split()) > 100)
+    for articles in [100, 50, 10]:
+        data = dataset.shuffle(seed=42).select(range(articles * 1000))["text"]
+        tokenized_data = preprocess_data(data)
+        vocab, doc_freq = build_vocab(tokenized_data)
+        corpus_word_ids, word_to_id = get_ids(tokenized_data, vocab)
 
-    for NUM_TOPICS in [10,50,100]:
-        VOCAB_SIZE = len(word_to_id)
+        for NUM_TOPICS in [10, 50, 100]:
+            VOCAB_SIZE = len(word_to_id)
 
-        lda_model = VariationalLDA2(num_topics=NUM_TOPICS, vocab_size=VOCAB_SIZE)
-        lda_model.train_gpu(corpus_word_ids, em_iter=10, batch_size=8192)
-        topic_dicts = print_top_topics(lda_model, sorted(vocab))
-        export_model(lda_model, word_to_id, topic_dicts, path=f"nyt{year}_100k_{NUM_TOPICS}.json")
+            lda_model = VariationalLDA2(num_topics=NUM_TOPICS, vocab_size=VOCAB_SIZE)
+            lda_model.train_gpu(corpus_word_ids, em_iter=ITERS, batch_size=8192)
+            topic_dicts = print_top_topics(lda_model, sorted(vocab))
+            export_model(lda_model, word_to_id, topic_dicts, path=f"nyt{year}_{articles}k_{NUM_TOPICS}.json")
+
+# data = load_from_disk("wikipedia_100k")["text"]
+# tokenized_data = preprocess_data(data)
+# vocab, doc_freq = build_vocab(tokenized_data)
+# corpus_word_ids, word_to_id = get_ids(tokenized_data, vocab)
+
+# for NUM_TOPICS in [10,50,100]:
+#     VOCAB_SIZE = len(word_to_id)
+
+#     lda_model = VariationalLDA2(num_topics=NUM_TOPICS, vocab_size=VOCAB_SIZE)
+#     lda_model.train_gpu(corpus_word_ids, em_iter=ITERS, batch_size=8192)
+#     topic_dicts = print_top_topics(lda_model, sorted(vocab))
+#     export_model(lda_model, word_to_id, topic_dicts, path=f"wiki_100k_100k_{NUM_TOPICS}.json")
+
+
+# data = load_from_disk("wikipedia_processed")["text"]
+# tokenized_data = preprocess_data(data)
+# vocab, doc_freq = build_vocab(tokenized_data)
+# corpus_word_ids, word_to_id = get_ids(tokenized_data, vocab)
+
+# for NUM_TOPICS in [10,50,100,200]:
+#     VOCAB_SIZE = len(word_to_id)
+
+#     lda_model = VariationalLDA2(num_topics=NUM_TOPICS, vocab_size=VOCAB_SIZE)
+#     lda_model.train_gpu(corpus_word_ids, em_iter=ITERS, batch_size=8192)
+#     topic_dicts = print_top_topics(lda_model, sorted(vocab))
+#     export_model(lda_model, word_to_id, topic_dicts, path=f"wiki_50k_100k_{NUM_TOPICS}.json")
+
+
+# data = load_from_disk("wikipedia_10k")["text"]
+# tokenized_data = preprocess_data(data)
+# vocab, doc_freq = build_vocab(tokenized_data)
+# corpus_word_ids, word_to_id = get_ids(tokenized_data, vocab)
+
+# for NUM_TOPICS in [10,50,100,200]:
+#     VOCAB_SIZE = len(word_to_id)
+
+#     lda_model = VariationalLDA2(num_topics=NUM_TOPICS, vocab_size=VOCAB_SIZE)
+#     lda_model.train_gpu(corpus_word_ids, em_iter=ITERS, batch_size=8192)
+#     topic_dicts = print_top_topics(lda_model, sorted(vocab))
+#     export_model(lda_model, word_to_id, topic_dicts, path=f"wiki_10k_100k_{NUM_TOPICS}.json")
