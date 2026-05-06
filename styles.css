@@ -219,7 +219,7 @@ opacity: 0; animation: fadeUp 0.3s forwards;
 .word { display: inline; padding: 1px 0; transition: opacity 0.2s; cursor: default; }
 .word.has-topic:hover { filter: brightness(1.25); }
 .word.word-clickable:hover { color: var(--text) !important; }
-.word.has-topic { padding: 2px 5px; margin: 0 1px; border-radius: 4px; }
+.word.has-topic { padding: 2px 2px; margin: 0 0px; border-radius: 4px; }
 .word.dimmed { opacity: 0.1; }
 .word.oop    { color: var(--muted); }
 

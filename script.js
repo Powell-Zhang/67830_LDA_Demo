@@ -41,7 +41,8 @@ const STOPWORDS = new Set([
 function tokenize(text) {
   return text
     .toLowerCase()
-    .replace(/[^a-z\s]/g, " ")
+    .replace(/[^a-z'\s]/g, " ")     
+    .replace(/'\s|^\s*'|'\s*$/g, " ") 
     .split(/\s+/)
     .filter(t => t.length > 2 && !STOPWORDS.has(t));
 }
@@ -237,8 +238,8 @@ function runAnalysis(text) {
   if (!topics.length) return null;
   const activeIds = topics.map(t => t.id);
 
-  const words = text.split(/\s+/).map(token => {
-    const wid = MODEL.wordToId[token.toLowerCase().replace(/[^a-z\s']/g, "")];
+  const words = text.match(/\$?[0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?|[a-z]+(?:'[a-z]+)?|[^\w\s]/gi).map(token => {
+    const wid = MODEL.wordToId[token.toLowerCase()];
     if (wid === undefined || !phiByWid[wid]) return { text: token, topic: null, color: null };
 
     const phiRow = phiByWid[wid]; 
@@ -316,9 +317,10 @@ function renderChips(topics) {
 function renderWords(words, filter) {
   const el = document.getElementById("output-text");
   el.innerHTML = "";
+  
   words.forEach(w => {
     const span = document.createElement("span");
-    span.textContent = w.text + " ";
+    span.textContent = w.text;
     if (w.topic === null && !w.qScores) {
       span.className = "word oop";
     } else if (w.topic === null) {
@@ -337,7 +339,15 @@ function renderWords(words, filter) {
       span.style.cursor = "pointer";
       span.addEventListener("click", () => showWordDetail(w, span));
     }
+    if (/^(\$?[0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?|[a-z]+(?:'[a-z]+)*)$/i.test(w.text)) {
+      const spaceSpan = document.createElement("span");
+      spaceSpan.textContent = " ";
+      spaceSpan.className = "word oop";
+      el.appendChild(spaceSpan);
+    }
+
     el.appendChild(span);
+    
   });
 }
 
