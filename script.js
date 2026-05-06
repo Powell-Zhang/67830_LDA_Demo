@@ -477,17 +477,21 @@ const triggerText = document.getElementById('model-trigger-text');
 const confirmBtn  = document.getElementById('mp-confirm');
 const cancelBtn   = document.getElementById('mp-cancel');
 const topics200   = document.getElementById('topics-200');
+const yearRow = document.getElementById('year-row');
+const yearBtns = document.querySelectorAll('.mp-year-btn');
 
 
-let selCorpus = 'wiki', selTopics = '100', selArticles = '100k';
+let selCorpus = 'wiki', selTopics = '100', selArticles = '100k', selYear='';
 topics200.disabled=true;
+yearRow.classList.toggle('visible', false);
 
 function modelValue() {
+  if (selCorpus === 'nyt') return `model_weights/${selCorpus}${selYear}_${selArticles}_${selTopics}.json.gz`;
   return `model_weights/${selCorpus}_${selArticles}_${selTopics}.json.gz`;
 }
 
 function updateConfirm() {
-  confirmBtn.classList.toggle('active', !!(selCorpus && selTopics && selArticles));
+  confirmBtn.classList.toggle('active', !!(selCorpus && selTopics && selArticles && (selCorpus == 'wiki' || selYear)));
 }
 function update200() {
   topics200.disabled = (selCorpus !== 'wiki' || selArticles === '100k');
@@ -496,12 +500,15 @@ function update200() {
     document.querySelectorAll('.mp-topic-btn').forEach(b => b.classList.remove('selected'));
   }
 }
+
 document.querySelectorAll('.mp-option').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.mp-option').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
     selCorpus = btn.dataset.corpus;
     update200();
+    if (selCorpus !== "nyt") yearRow.classList.remove('visible');
+    else yearRow.classList.add('visible');
     updateConfirm();
   });
 });
@@ -526,6 +533,15 @@ document.querySelectorAll('.mp-article-btn').forEach(btn => {
   });
 });
 
+document.querySelectorAll('.mp-year-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mp-year-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selYear = btn.dataset.year;
+    updateConfirm();
+  });
+});
+
 triggerBtn.addEventListener('click', () => backdrop.classList.add('open'));
 cancelBtn.addEventListener('click',  () => backdrop.classList.remove('open'));
 backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.classList.remove('open'); });
@@ -534,10 +550,9 @@ confirmBtn.addEventListener('click', () => {
   if (!selCorpus || !selTopics) return;
   const corpus = selCorpus.startsWith('wiki') ? 'Wikipedia'
   : selCorpus.startsWith('nyt') ? `NYT ${selCorpus.slice(3, 7)}` : '';
-  const label = `${corpus} · ${selTopics} topics · ${selArticles} articles`;
+  const label = `${corpus} ${selYear} · ${selTopics} topics · ${selArticles} articles`;
   triggerText.textContent = label;
   backdrop.classList.remove('open');
-  console.log("loading", modelValue());
   loadModel(modelValue()); 
 });
 

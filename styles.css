@@ -107,6 +107,18 @@ header span { color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text
 .mp-article-btn:hover    { border-color: rgba(200,181,96,0.5); }
 .mp-article-btn.selected { border-color: var(--accent); background: rgba(200,181,96,0.08); color: var(--accent); }
 .mp-article-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.mp-year-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+.mp-year-btn {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 0;
+  cursor: pointer; font-family: var(--mono); font-size: 13px; color: var(--text);
+  text-align: center; transition: border-color 0.15s, background 0.15s;
+}
+.mp-year-btn:hover    { border-color: rgba(200,181,96,0.5); }
+.mp-year-btn.selected { border-color: var(--accent); background: rgba(200,181,96,0.08); color: var(--accent); }
+.mp-year-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+#year-row {max-height: 0; overflow: hidden; transition: max-height 0.3s, transform 0.1s;}
+#year-row.visible { max-height: 200px }
 .mp-footer { display: flex; justify-content: space-between; }
 #mp-cancel {
   background: none; border: 1px solid var(--border); border-radius: 8px;
