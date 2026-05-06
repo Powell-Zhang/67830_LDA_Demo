@@ -141,8 +141,13 @@ header span { color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text
 
 main {
 display: grid;
-grid-template-columns: 1fr 1fr;
+grid-template-columns: 1fr;
 height: calc(100vh - 73px);
+}
+@media (min-width: 768px) {
+  main {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 .panel-left {
 border-right: 1px solid var(--border);
