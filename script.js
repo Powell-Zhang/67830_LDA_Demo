@@ -465,13 +465,13 @@ function resetResults() {
 // ── boot ──────────────────────────────────────────────────────────────────────
 
 function scaleBody() {
-  console.log("scaling");
   const body = document.body;
   const width = document.documentElement.clientWidth;
   if (width < 480) {
     const scale = width / 480;
     body.style.width = '480px';
     body.style.transform = `scale(${scale})`;
+    body.style.height = `calc(100vh / ${scale}) `;
   } 
 }
 scaleBody();
@@ -549,10 +549,19 @@ document.querySelectorAll('.mp-year-btn').forEach(btn => {
     updateConfirm();
   });
 });
-
-triggerBtn.addEventListener('click', () => backdrop.classList.add('open'));
-cancelBtn.addEventListener('click',  () => backdrop.classList.remove('open'));
-backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.classList.remove('open'); });
+function openBackdrop() {
+  backdrop.classList.add('open')
+  document.body.style.overflow = "hidden";
+  document.body.style.touchAction = "none";
+}
+function closeBackdrop() {
+  backdrop.classList.remove('open')
+  document.body.style.overflow = "auto";
+  document.body.style.touchAction = "auto";
+}
+triggerBtn.addEventListener('click', openBackdrop);
+cancelBtn.addEventListener('click',  closeBackdrop);
+backdrop.addEventListener('click', e => { if (e.target === backdrop) closeBackdrop(); });
 
 confirmBtn.addEventListener('click', () => {
   if (!selCorpus || !selTopics) return;
@@ -569,7 +578,7 @@ confirmBtn.addEventListener('click', () => {
 });
 
 updateConfirm();
-backdrop.classList.add('open');
+openBackdrop();
 analyzeBtn.disabled=true;
 
 document.getElementById("input-text").value =

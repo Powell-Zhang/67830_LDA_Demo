@@ -14,7 +14,7 @@ background: var(--bg);
 color: var(--text);
 font-family: var(--mono);
 font-size: 14px;
-min-height: 100vh;
+/* min-height: calc(100vh - 73px); */
 transform-origin: top left;
 display: grid;
 grid-template-rows: auto 1fr;
@@ -160,7 +160,7 @@ header span { color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text
 main {
 display: grid;
 grid-template-columns: 1fr;
-height: calc(100vh - 73px);
+height: calc(100vh - 100px);
 }
 @media (min-width: 768px) {
   main {
