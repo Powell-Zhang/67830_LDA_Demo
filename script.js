@@ -459,6 +459,18 @@ function resetResults() {
 
 // ── boot ──────────────────────────────────────────────────────────────────────
 
+function scaleBody() {
+  console.log("scaling");
+  const body = document.body;
+  const width = document.documentElement.clientWidth;
+  if (width < 480) {
+    const scale = width / 480;
+    body.style.width = '480px';
+    body.style.transform = `scale(${scale})`;
+  } 
+}
+scaleBody();
+
 const backdrop    = document.getElementById('model-backdrop');
 const triggerBtn  = document.getElementById('model-trigger-btn');
 const analyzeBtn  = document.getElementById("analyze-btn");
