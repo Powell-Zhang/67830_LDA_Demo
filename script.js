@@ -106,6 +106,7 @@ let MODEL = null;
 async function loadModel(filename = "wiki_100k_100.json.gz") {
   const statusWrap = document.getElementById("model-status");
   const statusTxt  = document.getElementById("model-status-text");
+  const statusMobile  = document.getElementById("model-status-mobile");
   const select = document.getElementById("model-trigger-btn");
   const analyzeBtn = document.getElementById("analyze-btn");
 
@@ -114,6 +115,7 @@ async function loadModel(filename = "wiki_100k_100.json.gz") {
   analyzeBtn.disabled = true;
   statusWrap.className = "";
   statusTxt.textContent = "Loading model…";
+  statusMobile.textContent = "Loading…";
   resetResults();
 
   try {
@@ -160,6 +162,7 @@ async function loadModel(filename = "wiki_100k_100.json.gz") {
         if (total) {
           const pct = Math.round((loaded / total) * 100);
           statusTxt.textContent = `Loading model… ${pct}%`;
+          statusMobile.textContent = `${pct}%`;
         }
       }
     }
@@ -179,12 +182,14 @@ async function loadModel(filename = "wiki_100k_100.json.gz") {
     
     statusWrap.className = "ready";
     statusTxt.textContent = `${MODEL.beta.length} topics · ${MODEL.vocab.length.toLocaleString()} words`;
+    statusMobile.textContent = `${MODEL.beta.length} topics`;
     document.getElementById("analyze-btn").disabled = false;
     select.disabled = false;
 
   } catch (e) {
     statusWrap.className = "error";
     statusTxt.textContent = "model not found";
+    statusMobile.textContent = `not found`;
     if (typeof select !== 'undefined') select.disabled = false;
     console.error(e);
   }
