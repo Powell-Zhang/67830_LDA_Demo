@@ -270,36 +270,17 @@ function renderBars(topics) {
     row.className = "topic-bar-row";
     row.style.animationDelay = `${i * 40}ms`;
     row.title = "Top words: " + t.topWords.map(([w]) => w).join(", ");
+    row.dataset.id = t.id;
+    row.title = t.topWords.map(([w]) => w).join(", ");
+    row.style.cssText = `border-color:hsla(${t.color},0.4); background:hsla(${t.color},var(--bg-alpha);`;
     row.innerHTML = `
       <div class="bar-label">${t.label}</div>
       <div class="bar-track"><div class="bar-fill" style="background:hsl(${t.color})"></div></div>
       <div class="bar-pct">${(t.weight * 100).toFixed(1)}%</div>`;
-    el.appendChild(row);
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const fill = row.querySelector(".bar-fill");
-      fill.style.transition = `transform 0.55s cubic-bezier(0.22,1,0.36,1) ${i * 50}ms`;
-      fill.style.transform  = `scaleX(${t.weight / max})`;
-    }));
-  });
-}
-
-function renderChips(topics) {
-  const el = document.getElementById("topic-list");
-  el.innerHTML = "";
-  topics.forEach((t, i) => {
-    const chip = document.createElement("div");
-    chip.className = "topic-chip";
-    chip.style.cssText = `animation-delay:${i * 35}ms;border-color:hsla(${t.color},0.4);background:hsla(${t.color},0.08)`;
-    chip.dataset.id = t.id;
-    chip.title = t.topWords.map(([w]) => w).join(", ");
-    chip.innerHTML = `
-      <div class="chip-dot" style="background:hsl(${t.color})"></div>
-      <span class="chip-label">${t.label}</span>
-      <span class="chip-weight">${(t.weight * 100).toFixed(1)}%</span>`;
-    chip.addEventListener("click", () => {
+    row.addEventListener("click", () => {
       const wasActive = activeFilter === t.id;
       activeFilter = wasActive ? null : t.id;
-      document.querySelectorAll(".topic-chip").forEach(c => {
+      document.querySelectorAll(".topic-bar-row").forEach(c => {
         c.classList.toggle("dimmed",   activeFilter !== null && parseInt(c.dataset.id) !== activeFilter);
         c.classList.toggle("selected", parseInt(c.dataset.id) === activeFilter);
       });
@@ -310,7 +291,12 @@ function renderChips(topics) {
         hideDetailPanel();
       }
     });
-    el.appendChild(chip);
+    el.appendChild(row);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const fill = row.querySelector(".bar-fill");
+      fill.style.transition = `transform 0.55s cubic-bezier(0.22,1,0.36,1) ${i * 50}ms`;
+      fill.style.transform  = `scaleX(${t.weight / max})`;
+    }));
   });
 }
 
@@ -454,7 +440,6 @@ document.getElementById("analyze-btn").addEventListener("click", () => {
     lastWords  = result.words;
     lastTopics = result.topics;
     renderBars(result.topics);
-    renderChips(result.topics);
     renderWords(result.words, null);
     status.textContent = `${result.topics.length} topics · ${result.words.length} tokens · ${ms}ms`;
     btn.disabled = false;
@@ -468,7 +453,6 @@ function resetResults() {
   lastTopics   = [];
   hideDetailPanel();
   document.getElementById("topic-bars").innerHTML  = '<p class="empty">Run analysis to see topics.</p>';
-  document.getElementById("topic-list").innerHTML  = '<p class="empty">—</p>';
   document.getElementById("output-text").innerHTML = '<p class="empty">Words will be coloured by their dominant topic.</p>';
   document.getElementById("status").textContent    = "";
 }

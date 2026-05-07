@@ -193,12 +193,18 @@ button#analyze-btn:active { transform: scale(0.98); }
 button#analyze-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 #status { font-size: 12px; color: var(--muted); font-style: italic; }
 
-.panel-right { display: flex; flex-direction: column; overflow: hidden; }
+.panel-right { display: flex; flex-direction: column; overflow: visible; }
+@media (min-width: 768px) {
+  .panel-right {overflow: hidden;}
+}
 .panel-section { padding: 28px 36px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .panel-section.scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; border-bottom: none; }
 .section-title { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
 
-.topic-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; opacity: 0; animation: fadeUp 0.3s forwards; }
+.topic-bar-row { display: flex; align-items: center; gap: 2px; margin-bottom: 2px; opacity: 0; animation: fadeUp 0.3s forwards; border-radius: 999px; border: 0px solid; padding: 2px 12px 2px 8px; --bg-alpha: 0; cursor: pointer;}
+.topic-bar-row:hover { transform: translateY(-1px); }
+.topic-bar-row.dimmed { opacity: 0.2 !important; }
+.topic-bar-row.selected { box-shadow: 0 0 0 2px rgba(255,255,255,0.15); border: 1px solid; --bg-alpha: 0.08;}
 .bar-label { width: 320px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
 .bar-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
 .bar-fill  { height: 100%; border-radius: 3px; transform: scaleX(0); transform-origin: left; }
