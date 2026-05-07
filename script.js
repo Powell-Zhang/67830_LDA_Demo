@@ -463,6 +463,7 @@ const backdrop    = document.getElementById('model-backdrop');
 const triggerBtn  = document.getElementById('model-trigger-btn');
 const analyzeBtn  = document.getElementById("analyze-btn");
 const triggerText = document.getElementById('model-trigger-text');
+const triggerMobile = document.getElementById('model-trigger-mobile');
 const confirmBtn  = document.getElementById('mp-confirm');
 const cancelBtn   = document.getElementById('mp-cancel');
 const topics200   = document.getElementById('topics-200');
@@ -541,7 +542,10 @@ confirmBtn.addEventListener('click', () => {
   const corpus = selCorpus.startsWith('wiki') ? 'Wikipedia'
   : selCorpus.startsWith('nyt') ? `NYT ${selCorpus.slice(3, 7)}` : '';
   const label = `${corpus} ${selYear} · ${selTopics} topics · ${selArticles} articles`;
+  const mobileLabel = `${corpus} ${selYear}`;
+ 
   triggerText.textContent = label;
+  triggerMobile.textContent = mobileLabel;
   backdrop.classList.remove('open');
   loadModel(modelValue()); 
 });

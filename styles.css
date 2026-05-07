@@ -53,6 +53,12 @@ header span { color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text
   display: flex; align-items: center; gap: 8px;
   transition: border-color 0.2s;
 }
+#model-trigger-text {display: none;}
+#model-trigger-mobile {display: inline;}
+@media (min-width: 768px) {
+  #model-trigger-text {display: inline;}
+  #model-trigger-mobile {display: none;}
+}
 #model-trigger-btn:hover { border-color: rgba(200,181,96,0.9); }
 .model-chevron { color: var(--muted); font-size: 9px; }
 
