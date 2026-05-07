@@ -549,19 +549,10 @@ document.querySelectorAll('.mp-year-btn').forEach(btn => {
     updateConfirm();
   });
 });
-function openBackdrop() {
-  backdrop.classList.add('open')
-  document.body.style.overflow = "hidden";
-  document.body.style.touchAction = "none";
-}
-function closeBackdrop() {
-  backdrop.classList.remove('open')
-  document.body.style.overflow = "auto";
-  document.body.style.touchAction = "auto";
-}
-triggerBtn.addEventListener('click', openBackdrop);
-cancelBtn.addEventListener('click',  closeBackdrop);
-backdrop.addEventListener('click', e => { if (e.target === backdrop) closeBackdrop(); });
+
+triggerBtn.addEventListener('click', () => backdrop.classList.add('open'));
+cancelBtn.addEventListener('click',  () => backdrop.classList.remove('open'));
+backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.classList.remove('open'); });
 
 confirmBtn.addEventListener('click', () => {
   if (!selCorpus || !selTopics) return;
@@ -578,7 +569,7 @@ confirmBtn.addEventListener('click', () => {
 });
 
 updateConfirm();
-openBackdrop();
+backdrop.classList.add('open');
 analyzeBtn.disabled=true;
 
 document.getElementById("input-text").value =
