@@ -540,9 +540,10 @@ backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.cl
 confirmBtn.addEventListener('click', () => {
   if (!selCorpus || !selTopics) return;
   const corpus = selCorpus.startsWith('wiki') ? 'Wikipedia'
-  : selCorpus.startsWith('nyt') ? `NYT ${selCorpus.slice(3, 7)}` : '';
-  const label = `${corpus} ${selYear} · ${selTopics} topics · ${selArticles} articles`;
-  const mobileLabel = `${corpus} ${selYear}`;
+  : selCorpus.startsWith('nyt') ? `NYT ${selYear}` : '';
+  const label = `${corpus} · ${selTopics} topics · ${selArticles} articles`;
+  const mobileLabel = `${corpus}`;
+  
  
   triggerText.textContent = label;
   triggerMobile.textContent = mobileLabel;
